@@ -25,7 +25,7 @@ type Olmo3ThinkRenderer struct {
 	Variant Olmo3ThinkVariant
 }
 
-func (r *Olmo3ThinkRenderer) Render(messages []api.Message, _ []api.Tool, _ *api.ThinkValue) (string, error) {
+func (r *Olmo3ThinkRenderer) Render(messages []api.Message, _ []api.Tool, _ *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	var systemMessage *api.Message
@@ -78,7 +78,9 @@ func (r *Olmo3ThinkRenderer) Render(messages []api.Message, _ []api.Tool, _ *api
 	}
 
 	// Always add generation prompt with <think> tag for thinking models
-	sb.WriteString("<|im_start|>assistant\n<think>")
+	sb.WriteString("<|im_start|>assistant\n")
+	snapshotOffset := sb.Len()
+	sb.WriteString("<think>")
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }

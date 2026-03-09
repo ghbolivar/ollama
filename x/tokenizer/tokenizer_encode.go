@@ -173,25 +173,42 @@ func (t *Tokenizer) appendEncodedChunk(ids []int32, c encodeChunk) []int32 {
 	return t.encodeChunkInto(c.text, ids)
 }
 
-// Encode tokenizes text to token IDs.
+// Encode tokenizes text to token IDs. If byteOffset > 0, it also returns
+// the token index corresponding to that byte position in the input string.
+// This is used to map a renderer's byte offset (e.g. before a thinking prefill)
+// to a token boundary for snapshot capture. When byteOffset is 0, the returned
+// snapshotTokenIdx equals len(ids) (end of prompt).
 // Parallel encoding is used only for very large inputs with enough chunks per worker.
-func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
+func (t *Tokenizer) Encode(s string, addBOS bool, byteOffset int) ([]int32, int) {
 	// First: split by special tokens
 	parts := t.splitBySpecialTokens(s)
 
 	// Fast path: encode sequentially without materializing chunk slices.
 	if len(s) < encodeParallelMinInputBytes {
 		var ids []int32
+		bytePos := 0
+		snapshotTokenIdx := -1
 		for _, part := range parts {
 			t.forEachPartChunk(part, func(c encodeChunk) {
+				tokensBefore := len(ids)
 				ids = t.appendEncodedChunk(ids, c)
+				if snapshotTokenIdx < 0 && byteOffset > 0 && bytePos+len(c.text) > byteOffset {
+					snapshotTokenIdx = tokensBefore
+				}
+				bytePos += len(c.text)
 			})
 		}
 
 		if addBOS && t.vocab.BOS >= 0 {
 			ids = append([]int32{t.vocab.BOS}, ids...)
+			if snapshotTokenIdx >= 0 {
+				snapshotTokenIdx++
+			}
 		}
-		return ids
+		if snapshotTokenIdx < 0 {
+			snapshotTokenIdx = len(ids)
+		}
+		return ids, snapshotTokenIdx
 	}
 
 	// For large inputs collect chunks to enable parallel processing.
@@ -200,6 +217,19 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 		t.forEachPartChunk(part, func(c encodeChunk) {
 			allChunks = append(allChunks, c)
 		})
+	}
+
+	// Find the chunk index containing the byte offset.
+	snapshotChunkIdx := -1
+	if byteOffset > 0 {
+		bytePos := 0
+		for i, c := range allChunks {
+			if bytePos+len(c.text) > byteOffset {
+				snapshotChunkIdx = i
+				break
+			}
+			bytePos += len(c.text)
+		}
 	}
 
 	// Encode chunks. Use the parallel path only when the chunk count is
@@ -214,8 +244,12 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 	}
 
 	var ids []int32
+	snapshotTokenIdx := -1
 	if !useParallel {
-		for _, c := range allChunks {
+		for i, c := range allChunks {
+			if snapshotTokenIdx < 0 && i == snapshotChunkIdx {
+				snapshotTokenIdx = len(ids)
+			}
 			ids = t.appendEncodedChunk(ids, c)
 		}
 	} else {
@@ -245,6 +279,16 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 		}
 		wg.Wait()
 
+		// Compute snapshot token index from worker results.
+		if snapshotChunkIdx >= 0 {
+			targetWorker := snapshotChunkIdx / chunksPer
+			tokenCount := 0
+			for i := 0; i < targetWorker; i++ {
+				tokenCount += len(results[i])
+			}
+			snapshotTokenIdx = tokenCount
+		}
+
 		for _, r := range results {
 			ids = append(ids, r...)
 		}
@@ -252,8 +296,14 @@ func (t *Tokenizer) Encode(s string, addBOS bool) []int32 {
 
 	if addBOS && t.vocab.BOS >= 0 {
 		ids = append([]int32{t.vocab.BOS}, ids...)
+		if snapshotTokenIdx >= 0 {
+			snapshotTokenIdx++
+		}
 	}
-	return ids
+	if snapshotTokenIdx < 0 {
+		snapshotTokenIdx = len(ids)
+	}
+	return ids, snapshotTokenIdx
 }
 
 // encodeChunkInto appends encoded tokens to ids and returns the extended slice.

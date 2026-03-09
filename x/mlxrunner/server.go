@@ -147,7 +147,7 @@ func Execute(args []string) error {
 			return
 		}
 
-		tokens := runner.Tokenizer.Encode(b.String(), true)
+		tokens, _ := runner.Tokenizer.Encode(b.String(), true, 0)
 
 		if err := json.NewEncoder(w).Encode(tokens); err != nil {
 			slog.Error("Failed to encode response", "error", err)

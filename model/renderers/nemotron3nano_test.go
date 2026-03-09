@@ -561,7 +561,7 @@ func TestNemotron3NanoRenderer(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(rendered, tt.expected); diff != "" {
+			if diff := cmp.Diff(rendered.Prompt, tt.expected); diff != "" {
 				t.Errorf("mismatch (-got +want):\n%s", diff)
 			}
 		})

@@ -13,6 +13,7 @@ import (
 	"github.com/ollama/ollama/llm"
 	"github.com/ollama/ollama/model/renderers"
 	"github.com/ollama/ollama/template"
+	"github.com/ollama/ollama/thinking"
 )
 
 type tokenizeFunc func(context.Context, string) ([]int, error)
@@ -20,7 +21,7 @@ type tokenizeFunc func(context.Context, string) ([]int, error)
 // chatPrompt accepts a list of messages and returns the prompt and images that should be used for the next chat turn.
 // chatPrompt truncates any messages that exceed the context window of the model, making sure to always include 1) the
 // latest message and 2) system messages
-func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.Options, msgs []api.Message, tools []api.Tool, think *api.ThinkValue, truncate bool) (prompt string, images []llm.ImageData, _ error) {
+func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.Options, msgs []api.Message, tools []api.Tool, think *api.ThinkValue, truncate bool) (prompt string, images []llm.ImageData, snapshotOffset int, _ error) {
 	var system []api.Message
 
 	// TODO: Ideally we would compute this from the projector metadata but some pieces are implementation dependent
@@ -41,14 +42,14 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 				}
 			}
 
-			p, err := renderPrompt(m, append(system, msgs[i:]...), tools, think)
+			p, _, err := renderPrompt(m, append(system, msgs[i:]...), tools, think)
 			if err != nil {
-				return "", nil, err
+				return "", nil, 0, err
 			}
 
 			s, err := tokenize(ctx, p)
 			if err != nil {
-				return "", nil, err
+				return "", nil, 0, err
 			}
 
 			ctxLen := len(s)
@@ -77,7 +78,7 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 
 	for cnt, msg := range msgs[currMsgIdx:] {
 		if slices.Contains(m.Config.ModelFamilies, "mllama") && len(msg.Images) > 1 {
-			return "", nil, errors.New("this model only supports one image while more than one image requested")
+			return "", nil, 0, errors.New("this model only supports one image while more than one image requested")
 		}
 
 		var prefix string
@@ -105,21 +106,21 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 	}
 
 	// truncate any messages that do not fit into the context window
-	p, err := renderPrompt(m, append(system, msgs[currMsgIdx:]...), tools, think)
+	p, so, err := renderPrompt(m, append(system, msgs[currMsgIdx:]...), tools, think)
 	if err != nil {
-		return "", nil, err
+		return "", nil, 0, err
 	}
 
-	return p, images, nil
+	return p, images, so, nil
 }
 
-func renderPrompt(m *Model, msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
+func renderPrompt(m *Model, msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (string, int, error) {
 	if m.Config.Renderer != "" {
-		rendered, err := renderers.RenderWithRenderer(m.Config.Renderer, msgs, tools, think)
+		result, err := renderers.RenderWithRenderer(m.Config.Renderer, msgs, tools, think)
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
-		return rendered, nil
+		return result.Prompt, result.SnapshotOffset, nil
 	}
 
 	var b bytes.Buffer
@@ -130,7 +131,26 @@ func renderPrompt(m *Model, msgs []api.Message, tools []api.Tool, think *api.Thi
 		thinkLevel = think.String()
 	}
 	if err := m.Template.Execute(&b, template.Values{Messages: msgs, Tools: tools, Think: thinkVal, ThinkLevel: thinkLevel, IsThinkSet: think != nil}); err != nil {
-		return "", err
+		return "", 0, err
 	}
-	return b.String(), nil
+
+	rendered := b.String()
+	snapshotOffset := 0
+
+	// For template-based models with thinking enabled, find the last unclosed
+	// opening think tag. Prior messages have matched open/close pairs; the
+	// prefill tag at the end is the only unclosed one.
+	if thinkVal {
+		openTag, closeTag := thinking.InferTags(m.Template.Template)
+		if openTag != "" {
+			if idx := strings.LastIndex(rendered, openTag); idx >= 0 {
+				after := rendered[idx+len(openTag):]
+				if closeTag == "" || !strings.Contains(after, closeTag) {
+					snapshotOffset = idx
+				}
+			}
+		}
+	}
+
+	return rendered, snapshotOffset, nil
 }

@@ -194,7 +194,7 @@ func TestLFM2Renderer_ChatTemplateParity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Render() error = %v", err)
 			}
-			if diff := cmp.Diff(tt.expected, rendered); diff != "" {
+			if diff := cmp.Diff(tt.expected, rendered.Prompt); diff != "" {
 				t.Fatalf("Render() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -256,7 +256,7 @@ func TestLFM2Renderer_Images(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Render() error = %v", err)
 			}
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
+			if diff := cmp.Diff(tt.expected, got.Prompt); diff != "" {
 				t.Fatalf("Render() mismatch (-want +got):\n%s", diff)
 			}
 		})

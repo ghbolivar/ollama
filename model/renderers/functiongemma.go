@@ -12,7 +12,7 @@ type FunctionGemmaRenderer struct{}
 
 const defaultSystemMessage = "You can do function calling with the following functions:"
 
-func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	sb.WriteString("<bos>")
@@ -120,7 +120,7 @@ func (r *FunctionGemmaRenderer) Render(messages []api.Message, tools []api.Tool,
 		sb.WriteString("<start_of_turn>model\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String()}, nil
 }
 
 func (r *FunctionGemmaRenderer) renderToolDeclaration(tool api.Tool) string {

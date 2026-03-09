@@ -10,7 +10,7 @@ import (
 
 type GLM46Renderer struct{}
 
-func (r *GLM46Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *GLM46Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	sb.WriteString("[gMASK]<sop>")
@@ -106,5 +106,5 @@ func (r *GLM46Renderer) Render(messages []api.Message, tools []api.Tool, thinkVa
 		sb.WriteString("\n<think></think>\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String()}, nil
 }

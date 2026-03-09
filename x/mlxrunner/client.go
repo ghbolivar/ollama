@@ -194,8 +194,9 @@ func (c *Client) waitUntilRunning() error {
 
 // completionRequest is a properly-tagged version of llm.CompletionRequest for JSON serialization.
 type completionRequest struct {
-	Prompt  string          `json:"prompt"`
-	Options *completionOpts `json:"options,omitempty"`
+	Prompt         string          `json:"prompt"`
+	SnapshotOffset int             `json:"snapshot_offset,omitempty"`
+	Options        *completionOpts `json:"options,omitempty"`
 }
 
 type completionOpts struct {
@@ -243,7 +244,8 @@ func (c *Client) Close() error {
 // Completion implements llm.LlamaServer.
 func (c *Client) Completion(ctx context.Context, req llm.CompletionRequest, fn func(llm.CompletionResponse)) error {
 	creq := completionRequest{
-		Prompt: req.Prompt,
+		Prompt:         req.Prompt,
+		SnapshotOffset: req.SnapshotOffset,
 	}
 	if req.Options != nil {
 		creq.Options = &completionOpts{

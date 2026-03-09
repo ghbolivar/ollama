@@ -135,7 +135,7 @@ func TestGGMLLlamaKnownEncodings(t *testing.T) {
 	}
 
 	for input, want := range cases {
-		got := tok.Encode(input, false)
+		got, _ := tok.Encode(input, false, 0)
 		if !equalIDs(got, want) {
 			t.Fatalf("encode mismatch for %q:\n got:  %v\n want: %v", input, got, want)
 		}
@@ -167,7 +167,7 @@ func TestGGMLLlamaRepeatedZeros(t *testing.T) {
 
 	for n, want := range cases {
 		input := strings.Repeat("0", n)
-		got := tok.Encode(input, false)
+		got, _ := tok.Encode(input, false, 0)
 		if !equalIDs(got, want) {
 			t.Fatalf("encode mismatch for %q:\n got:  %v\n want: %v", input, got, want)
 		}
@@ -189,7 +189,7 @@ func TestGGMLLlamaRoundtripAndByteBehavior(t *testing.T) {
 	}
 
 	for _, input := range cases {
-		ids := tok.Encode(input, false)
+		ids, _ := tok.Encode(input, false, 0)
 		got := tok.Decode(ids)
 		if got != input {
 			t.Fatalf("roundtrip mismatch for %q: got %q", input, got)
@@ -197,7 +197,7 @@ func TestGGMLLlamaRoundtripAndByteBehavior(t *testing.T) {
 	}
 
 	// Match GGML tokenizer behavior: 0x00 is omitted when decoding.
-	ids := tok.Encode(string(rune(0x00)), false)
+	ids, _ := tok.Encode(string(rune(0x00)), false, 0)
 	got := tok.Decode(ids)
 	if got != "" {
 		t.Fatalf("expected empty decode for 0x00, got %q (ids=%v)", got, ids)

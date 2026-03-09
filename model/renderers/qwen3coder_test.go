@@ -290,7 +290,7 @@ call tool<|im_end|>
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(rendered, tt.expected); diff != "" {
+			if diff := cmp.Diff(rendered.Prompt, tt.expected); diff != "" {
 				t.Errorf("mismatch (-got +want):\n%s", diff)
 			}
 		})
@@ -352,11 +352,11 @@ func TestQwen3CoderRendererToolResponseNoTrailingNewline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if strings.Contains(rendered, "</tool_response>\n<|im_end|>") {
-		t.Fatalf("expected no newline after </tool_response>, got:\n%s", rendered)
+	if strings.Contains(rendered.Prompt, "</tool_response>\n<|im_end|>") {
+		t.Fatalf("expected no newline after </tool_response>, got:\n%s", rendered.Prompt)
 	}
-	if !strings.Contains(rendered, "</tool_response><|im_end|>") {
-		t.Fatalf("expected </tool_response> to be immediately followed by <|im_end|>, got:\n%s", rendered)
+	if !strings.Contains(rendered.Prompt, "</tool_response><|im_end|>") {
+		t.Fatalf("expected </tool_response> to be immediately followed by <|im_end|>, got:\n%s", rendered.Prompt)
 	}
 }
 

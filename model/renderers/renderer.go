@@ -6,8 +6,13 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+type RenderResult struct {
+	Prompt         string
+	SnapshotOffset int // byte offset before thinking prefill; 0 = end of prompt
+}
+
 type Renderer interface {
-	Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error)
+	Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (RenderResult, error)
 }
 
 type (
@@ -34,10 +39,10 @@ func Register(name string, renderer RendererConstructor) {
 	registry.Register(name, renderer)
 }
 
-func RenderWithRenderer(name string, msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
+func RenderWithRenderer(name string, msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (RenderResult, error) {
 	renderer := rendererForName(name)
 	if renderer == nil {
-		return "", fmt.Errorf("unknown renderer %q", name)
+		return RenderResult{}, fmt.Errorf("unknown renderer %q", name)
 	}
 	return renderer.Render(msgs, tools, think)
 }

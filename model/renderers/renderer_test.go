@@ -8,8 +8,8 @@ import (
 
 type mockRenderer struct{}
 
-func (m *mockRenderer) Render(msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
-	return "mock-output", nil
+func (m *mockRenderer) Render(msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (RenderResult, error) {
+	return RenderResult{Prompt: "mock-output"}, nil
 }
 
 func TestRegisterCustomRenderer(t *testing.T) {
@@ -23,8 +23,8 @@ func TestRegisterCustomRenderer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != "mock-output" {
-		t.Errorf("expected 'mock-output', got %q", result)
+	if result.Prompt != "mock-output" {
+		t.Errorf("expected 'mock-output', got %q", result.Prompt)
 	}
 }
 
@@ -46,7 +46,7 @@ func TestBuiltInRendererStillWorks(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if result == "" {
+			if result.Prompt == "" {
 				t.Fatalf("expected non-empty result from %s renderer", tt.name)
 			}
 		})
@@ -64,8 +64,8 @@ func TestOverrideBuiltInRenderer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != "mock-output" {
-		t.Errorf("expected 'mock-output' from override, got %q", result)
+	if result.Prompt != "mock-output" {
+		t.Errorf("expected 'mock-output' from override, got %q", result.Prompt)
 	}
 }
 

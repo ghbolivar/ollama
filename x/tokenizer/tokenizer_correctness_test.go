@@ -36,7 +36,7 @@ func TestEncodeRoundtripMiniLlama(t *testing.T) {
 	}
 
 	for _, input := range inputs {
-		ids := tok.Encode(input, false)
+		ids, _ := tok.Encode(input, false, 0)
 		got := tok.Decode(ids)
 		if got != input {
 			t.Fatalf("roundtrip mismatch for %q: got %q", input, got)
@@ -120,14 +120,14 @@ func TestEncodeDeterministicAcrossGOMAXPROCS(t *testing.T) {
 	defer runtime.GOMAXPROCS(prev)
 
 	runtime.GOMAXPROCS(1)
-	seq := tok.Encode(input, false)
+	seq, _ := tok.Encode(input, false, 0)
 
 	if prev < 2 {
 		runtime.GOMAXPROCS(2)
 	} else {
 		runtime.GOMAXPROCS(prev)
 	}
-	par := tok.Encode(input, false)
+	par, _ := tok.Encode(input, false, 0)
 
 	if !equalIDs(seq, par) {
 		t.Fatalf("encode mismatch between sequential and parallel paths: seq=%d par=%d", len(seq), len(par))

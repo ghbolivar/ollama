@@ -18,8 +18,9 @@ type DeepSeek3Renderer struct {
 	Variant    DeepSeek3Variant
 }
 
-func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
+	var snapshotOffset int
 
 	// thinking is enabled: model must support it AND user must request it
 	thinking := r.IsThinking && (thinkValue != nil && thinkValue.Bool())
@@ -146,6 +147,7 @@ func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thi
 
 	if isLastUser && !isTool {
 		sb.WriteString("<｜Assistant｜>")
+		snapshotOffset = sb.Len()
 		if thinking {
 			sb.WriteString("<think>")
 		} else {
@@ -153,5 +155,5 @@ func (r *DeepSeek3Renderer) Render(messages []api.Message, tools []api.Tool, thi
 		}
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }

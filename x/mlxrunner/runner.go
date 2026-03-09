@@ -29,8 +29,9 @@ type Request struct {
 }
 
 type TextCompletionsRequest struct {
-	Prompt  string `json:"prompt"`
-	Options struct {
+	Prompt         string `json:"prompt"`
+	SnapshotOffset int    `json:"snapshot_offset"`
+	Options        struct {
 		Temperature     float32 `json:"temperature"`
 		TopP            float32 `json:"top_p"`
 		MinP            float32 `json:"min_p"`

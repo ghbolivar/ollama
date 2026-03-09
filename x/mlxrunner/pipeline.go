@@ -56,7 +56,7 @@ func (r *Runner) TextGenerationPipeline(request Request) error {
 		slog.Info("peak memory", "size", mlx.PrettyBytes(mlx.PeakMemory()))
 	}()
 
-	inputs := r.Tokenizer.Encode(request.Prompt, true)
+	inputs, preThinkTokenIdx := r.Tokenizer.Encode(request.Prompt, true, request.SnapshotOffset)
 	if len(inputs) == 0 {
 		return errors.New("empty prompt")
 	}
@@ -104,14 +104,16 @@ func (r *Runner) TextGenerationPipeline(request Request) error {
 
 		n := min(prefillChunk, total-processed-1)
 
-		// If there's a pending intermediate snapshot, split the batch
-		// so we can capture it at the exact offset. The cache offset
-		// after this batch will be: baseOffset + processed + n.
-		if session.snapshotOffset > 0 {
-			baseOffset := len(session.inputs) - len(tokens)
-			tokensUntilSnapshot := session.snapshotOffset - (baseOffset + processed)
-			if tokensUntilSnapshot > 0 && tokensUntilSnapshot < n {
-				n = tokensUntilSnapshot
+		// If there's a pending intermediate or pre-think snapshot, split
+		// the batch so we can capture it at the exact offset. The cache
+		// offset after this batch will be: baseOffset + processed + n.
+		baseOffset := len(session.inputs) - len(tokens)
+		for _, snapOff := range []int{session.snapshotOffset, preThinkTokenIdx} {
+			if snapOff > 0 {
+				tokensUntilSnapshot := snapOff - (baseOffset + processed)
+				if tokensUntilSnapshot > 0 && tokensUntilSnapshot < n {
+					n = tokensUntilSnapshot
+				}
 			}
 		}
 
@@ -121,12 +123,15 @@ func (r *Runner) TextGenerationPipeline(request Request) error {
 		processed += n
 		slog.Info("Prompt processing progress", "processed", processed, "total", total)
 
-		// Create snapshot at branch point for future diverging requests.
-		if session.snapshotOffset > 0 {
-			baseOffset := len(session.inputs) - len(tokens)
-			if baseOffset+processed >= session.snapshotOffset {
-				session.snapshot(false)
-			}
+		// Capture mid-prefill snapshots at branch points and pre-think
+		// boundaries so that recurrent caches (whose state is cumulative
+		// and not position-sliceable) are snapshotted at the correct offset.
+		if session.snapshotOffset > 0 && baseOffset+processed >= session.snapshotOffset {
+			session.snapshot(false)
+		}
+		if preThinkTokenIdx > 0 && baseOffset+processed >= preThinkTokenIdx {
+			session.snapshot(true)
+			preThinkTokenIdx = 0
 		}
 
 		mlx.ClearCache()

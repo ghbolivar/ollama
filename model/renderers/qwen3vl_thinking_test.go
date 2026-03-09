@@ -328,7 +328,7 @@ Speak poetry after the first sentence.</think><think>Speak poetry after the seco
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(rendered, tt.expected); diff != "" {
+			if diff := cmp.Diff(rendered.Prompt, tt.expected); diff != "" {
 				t.Errorf("mismatch (-got +want):\n%s", diff)
 			}
 		})
@@ -381,24 +381,24 @@ func TestQwen3VLRendererThinkOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(renderThinking, "<|im_start|>assistant\n<think>\n") {
-		t.Fatalf("expected default thinking renderer to emit <think>, got:\n%s", renderThinking)
+	if !strings.Contains(renderThinking.Prompt, "<|im_start|>assistant\n<think>\n") {
+		t.Fatalf("expected default thinking renderer to emit <think>, got:\n%s", renderThinking.Prompt)
 	}
 
 	renderNonThinking, err := (&Qwen3VLRenderer{isThinking: true}).Render(msgs, nil, &api.ThinkValue{Value: false})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(renderNonThinking, "<think>") {
-		t.Fatalf("expected think=false override to suppress <think>, got:\n%s", renderNonThinking)
+	if strings.Contains(renderNonThinking.Prompt, "<think>") {
+		t.Fatalf("expected think=false override to suppress <think>, got:\n%s", renderNonThinking.Prompt)
 	}
 
 	renderForcedThinking, err := (&Qwen3VLRenderer{isThinking: false}).Render(msgs, nil, &api.ThinkValue{Value: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(renderForcedThinking, "<|im_start|>assistant\n<think>\n") {
-		t.Fatalf("expected think=true override to emit <think>, got:\n%s", renderForcedThinking)
+	if !strings.Contains(renderForcedThinking.Prompt, "<|im_start|>assistant\n<think>\n") {
+		t.Fatalf("expected think=true override to emit <think>, got:\n%s", renderForcedThinking.Prompt)
 	}
 }
 
@@ -415,8 +415,8 @@ func TestQwen3VLRendererThinkOverrideWithExplicitNoThinkPrefill(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(renderNonThinking, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
-		t.Fatalf("expected explicit think=false prefill block, got:\n%s", renderNonThinking)
+	if !strings.Contains(renderNonThinking.Prompt, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
+		t.Fatalf("expected explicit think=false prefill block, got:\n%s", renderNonThinking.Prompt)
 	}
 }
 
@@ -426,19 +426,19 @@ func TestQwenRendererNameNoThinkBehaviorSplit(t *testing.T) {
 	}
 	thinkFalse := &api.ThinkValue{Value: false}
 
-	qwen35Rendered, err := RenderWithRenderer("qwen3.5", msgs, nil, thinkFalse)
+	qwen35Result, err := RenderWithRenderer("qwen3.5", msgs, nil, thinkFalse)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(qwen35Rendered, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
-		t.Fatalf("expected qwen3.5 renderer to emit explicit no-think prefill, got:\n%s", qwen35Rendered)
+	if !strings.Contains(qwen35Result.Prompt, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
+		t.Fatalf("expected qwen3.5 renderer to emit explicit no-think prefill, got:\n%s", qwen35Result.Prompt)
 	}
 
-	qwen3VLRendered, err := RenderWithRenderer("qwen3-vl-thinking", msgs, nil, thinkFalse)
+	qwen3VLResult, err := RenderWithRenderer("qwen3-vl-thinking", msgs, nil, thinkFalse)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(qwen3VLRendered, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
-		t.Fatalf("expected qwen3-vl-thinking renderer to keep legacy non-empty no-think behavior, got:\n%s", qwen3VLRendered)
+	if strings.Contains(qwen3VLResult.Prompt, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
+		t.Fatalf("expected qwen3-vl-thinking renderer to keep legacy non-empty no-think behavior, got:\n%s", qwen3VLResult.Prompt)
 	}
 }

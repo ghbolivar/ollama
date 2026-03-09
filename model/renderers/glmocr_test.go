@@ -91,7 +91,7 @@ func TestGlmOcrRenderer_Images(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Render() error = %v", err)
 			}
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
+			if diff := cmp.Diff(tt.expected, got.Prompt); diff != "" {
 				t.Fatalf("Render() mismatch (-want +got):\n%s", diff)
 			}
 		})

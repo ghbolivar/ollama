@@ -1462,6 +1462,11 @@ type CompletionRequest struct {
 	Shift    bool
 	Truncate bool
 
+	// SnapshotOffset is the byte offset in the prompt before the thinking
+	// prefill. The MLX runner uses this to capture a KV cache snapshot at
+	// the correct token boundary. Zero means end of prompt (default).
+	SnapshotOffset int
+
 	// Logprobs specifies whether to include log probabilities in the response
 	Logprobs bool
 

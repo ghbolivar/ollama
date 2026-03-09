@@ -38,7 +38,7 @@ import (
 //   - Users can disable thinking per-turn via thinkValue=false
 type GLM47Renderer struct{}
 
-func (r *GLM47Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *GLM47Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	sb.WriteString("[gMASK]<sop>")
@@ -100,13 +100,14 @@ func (r *GLM47Renderer) Render(messages []api.Message, tools []api.Tool, thinkVa
 	}
 
 	sb.WriteString("<|assistant|>")
+	snapshotOffset := sb.Len()
 	if think {
 		sb.WriteString("<think>")
 	} else {
 		sb.WriteString("</think>")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }
 
 func renderGLM47ToolArguments(args api.ToolCallFunctionArguments) string {

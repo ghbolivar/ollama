@@ -11,8 +11,9 @@ type CogitoRenderer struct {
 	isThinking bool
 }
 
-func (r *CogitoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *CogitoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
+	var snapshotOffset int
 
 	defaultPrompt := "You are Cogito, an AI assistant created by Deep Cogito, which is an AI research lab based in San Francisco."
 
@@ -121,9 +122,10 @@ func (r *CogitoRenderer) Render(messages []api.Message, tools []api.Tool, thinkV
 		sb.WriteString("<｜Assistant｜>")
 	}
 
+	snapshotOffset = sb.Len()
 	if enableThinking {
 		sb.WriteString("<think>\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }

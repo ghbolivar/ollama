@@ -34,8 +34,9 @@ func (r *Qwen3VLRenderer) renderContent(content api.Message, imageOffset int) (s
 	return subSb.String(), imageOffset
 }
 
-func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
+func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
+	var snapshotOffset int
 
 	isThinking := r.isThinking
 	if think != nil {
@@ -135,6 +136,7 @@ func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think
 		// prefill at the end
 		if lastMessage && !prefill {
 			sb.WriteString("<|im_start|>assistant\n")
+			snapshotOffset = sb.Len()
 			if isThinking {
 				sb.WriteString("<think>\n")
 			} else if r.emitEmptyThinkOnNoThink {
@@ -143,5 +145,5 @@ func (r *Qwen3VLRenderer) Render(messages []api.Message, tools []api.Tool, think
 		}
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }

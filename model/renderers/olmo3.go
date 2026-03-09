@@ -20,7 +20,7 @@ type Olmo3Renderer struct {
 	UseExtendedSystemMessage bool
 }
 
-func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.ThinkValue) (string, error) {
+func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	var systemMessage *api.Message
@@ -44,7 +44,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 		if len(tools) > 0 {
 			functionsJSON, err := marshalWithSpaces(tools)
 			if err != nil {
-				return "", err
+				return RenderResult{}, err
 			}
 			sb.WriteString("<functions>")
 			sb.WriteString(string(functionsJSON))
@@ -63,7 +63,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 		if len(tools) > 0 {
 			functionsJSON, err := marshalWithSpaces(tools)
 			if err != nil {
-				return "", err
+				return RenderResult{}, err
 			}
 			sb.WriteString(olmo3WithFunctionsMessage)
 			sb.WriteString("<functions>")
@@ -113,7 +113,7 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 						val, _ := tc.Function.Arguments.Get(key)
 						value, err := json.Marshal(val)
 						if err != nil {
-							return "", err
+							return RenderResult{}, err
 						}
 						sb.WriteString(fmt.Sprintf("%s=%s", key, string(value)))
 					}
@@ -151,5 +151,5 @@ func (r *Olmo3Renderer) Render(messages []api.Message, tools []api.Tool, _ *api.
 		sb.WriteString("<|im_start|>assistant\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String()}, nil
 }

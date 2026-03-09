@@ -24,7 +24,7 @@ func (r *GlmOcrRenderer) renderContent(message api.Message, imageOffset int) (st
 	return sb.String(), imageOffset
 }
 
-func (r *GlmOcrRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *GlmOcrRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	sb.WriteString("[gMASK]<sop>")
@@ -100,7 +100,7 @@ func (r *GlmOcrRenderer) Render(messages []api.Message, tools []api.Tool, thinkV
 		sb.WriteString("<think></think>\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String()}, nil
 }
 
 func renderGlmOcrToolArguments(args api.ToolCallFunctionArguments) string {

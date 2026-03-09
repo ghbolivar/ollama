@@ -55,22 +55,22 @@ func TestQwen35RendererUsesXMLToolCallingFormat(t *testing.T) {
 		t.Fatalf("render failed: %v", err)
 	}
 
-	if !strings.Contains(got, "<tools>") {
-		t.Fatalf("expected tools section in prompt, got:\n%s", got)
+	if !strings.Contains(got.Prompt, "<tools>") {
+		t.Fatalf("expected tools section in prompt, got:\n%s", got.Prompt)
 	}
-	if !strings.Contains(got, "<function=example_function_name>") {
-		t.Fatalf("expected xml-style tool call instructions, got:\n%s", got)
+	if !strings.Contains(got.Prompt, "<function=example_function_name>") {
+		t.Fatalf("expected xml-style tool call instructions, got:\n%s", got.Prompt)
 	}
 
 	wantToolCall := "<tool_call>\n<function=get_weather>\n<parameter=location>\nParis\n</parameter>\n</function>\n</tool_call>"
-	if !strings.Contains(got, wantToolCall) {
-		t.Fatalf("expected xml tool call payload, got:\n%s", got)
+	if !strings.Contains(got.Prompt, wantToolCall) {
+		t.Fatalf("expected xml tool call payload, got:\n%s", got.Prompt)
 	}
 
-	toolsIdx := strings.Index(got, "# Tools")
-	systemIdx := strings.Index(got, "You are a helpful assistant.")
+	toolsIdx := strings.Index(got.Prompt, "# Tools")
+	systemIdx := strings.Index(got.Prompt, "You are a helpful assistant.")
 	if toolsIdx == -1 || systemIdx == -1 || systemIdx < toolsIdx {
-		t.Fatalf("expected system prompt appended after tool instructions, got:\n%s", got)
+		t.Fatalf("expected system prompt appended after tool instructions, got:\n%s", got.Prompt)
 	}
 }
 
@@ -85,8 +85,8 @@ func TestQwen35RendererNoThinkPrefill(t *testing.T) {
 		t.Fatalf("render failed: %v", err)
 	}
 
-	if !strings.HasSuffix(got, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
-		t.Fatalf("expected explicit no-think prefill, got:\n%s", got)
+	if !strings.HasSuffix(got.Prompt, "<|im_start|>assistant\n<think>\n\n</think>\n\n") {
+		t.Fatalf("expected explicit no-think prefill, got:\n%s", got.Prompt)
 	}
 }
 
@@ -131,8 +131,8 @@ func TestQwen35RendererBackToBackToolCallsAndResponses(t *testing.T) {
 		t.Fatalf("render failed: %v", err)
 	}
 
-	if strings.Contains(got, "Need to call add and multiply.") {
-		t.Fatalf("did not expect historical reasoning block in this sequence, got:\n%s", got)
+	if strings.Contains(got.Prompt, "Need to call add and multiply.") {
+		t.Fatalf("did not expect historical reasoning block in this sequence, got:\n%s", got.Prompt)
 	}
 
 	wantToolCalls := `<tool_call>
@@ -155,8 +155,8 @@ func TestQwen35RendererBackToBackToolCallsAndResponses(t *testing.T) {
 </parameter>
 </function>
 </tool_call>`
-	if !strings.Contains(got, wantToolCalls) {
-		t.Fatalf("expected back-to-back tool calls, got:\n%s", got)
+	if !strings.Contains(got.Prompt, wantToolCalls) {
+		t.Fatalf("expected back-to-back tool calls, got:\n%s", got.Prompt)
 	}
 
 	wantToolResponses := `<|im_start|>user
@@ -166,12 +166,12 @@ func TestQwen35RendererBackToBackToolCallsAndResponses(t *testing.T) {
 <tool_response>
 20
 </tool_response><|im_end|>`
-	if !strings.Contains(got, wantToolResponses) {
-		t.Fatalf("expected grouped back-to-back tool responses, got:\n%s", got)
+	if !strings.Contains(got.Prompt, wantToolResponses) {
+		t.Fatalf("expected grouped back-to-back tool responses, got:\n%s", got.Prompt)
 	}
 
-	if !strings.HasSuffix(got, "<|im_start|>assistant\n<think>\n") {
-		t.Fatalf("expected assistant thinking prefill at end, got:\n%s", got)
+	if !strings.HasSuffix(got.Prompt, "<|im_start|>assistant\n<think>\n") {
+		t.Fatalf("expected assistant thinking prefill at end, got:\n%s", got.Prompt)
 	}
 }
 
@@ -234,8 +234,8 @@ Paris
 </parameter>
 </function>
 </tool_call><|im_end|>`
-	if !strings.Contains(got, wantFirstTurn) {
-		t.Fatalf("expected first assistant thinking/tool sequence, got:\n%s", got)
+	if !strings.Contains(got.Prompt, wantFirstTurn) {
+		t.Fatalf("expected first assistant thinking/tool sequence, got:\n%s", got.Prompt)
 	}
 
 	wantSecondTurn := `<|im_start|>assistant
@@ -252,12 +252,12 @@ Paris
 </parameter>
 </function>
 </tool_call><|im_end|>`
-	if !strings.Contains(got, wantSecondTurn) {
-		t.Fatalf("expected second assistant thinking/tool sequence, got:\n%s", got)
+	if !strings.Contains(got.Prompt, wantSecondTurn) {
+		t.Fatalf("expected second assistant thinking/tool sequence, got:\n%s", got.Prompt)
 	}
 
-	if !strings.HasSuffix(got, "<|im_start|>assistant\n<think>\n") {
-		t.Fatalf("expected assistant thinking prefill at end, got:\n%s", got)
+	if !strings.HasSuffix(got.Prompt, "<|im_start|>assistant\n<think>\n") {
+		t.Fatalf("expected assistant thinking prefill at end, got:\n%s", got.Prompt)
 	}
 }
 
@@ -285,8 +285,8 @@ Keep it short.
 </think>
 
 Hello world`
-	if got != want {
-		t.Fatalf("unexpected prefill output\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	if got.Prompt != want {
+		t.Fatalf("unexpected prefill output\n--- got ---\n%s\n--- want ---\n%s", got.Prompt, want)
 	}
 }
 

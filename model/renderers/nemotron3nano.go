@@ -10,7 +10,7 @@ import (
 
 type Nemotron3NanoRenderer struct{}
 
-func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	// thinking is enabled if user requests it
@@ -91,13 +91,15 @@ func (r *Nemotron3NanoRenderer) Render(messages []api.Message, tools []api.Tool,
 	}
 
 	// Add generation prompt
+	sb.WriteString("<|im_start|>assistant\n")
+	snapshotOffset := sb.Len()
 	if enableThinking {
-		sb.WriteString("<|im_start|>assistant\n<think>\n")
+		sb.WriteString("<think>\n")
 	} else {
-		sb.WriteString("<|im_start|>assistant\n<think></think>")
+		sb.WriteString("<think></think>")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }
 
 func (r *Nemotron3NanoRenderer) renderTools(tools []api.Tool) string {

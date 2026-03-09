@@ -79,8 +79,9 @@ func splitQwen35ReasoningContent(content, messageThinking string, isThinking boo
 	return strings.TrimSpace(reasoning), content
 }
 
-func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
+func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
+	var snapshotOffset int
 
 	isThinking := r.isThinking
 	if think != nil {
@@ -182,6 +183,7 @@ func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think 
 		// prefill at the end
 		if lastMessage && !prefill {
 			sb.WriteString(imStartTag + "assistant\n")
+			snapshotOffset = sb.Len()
 			if isThinking {
 				sb.WriteString("<think>\n")
 			} else if r.emitEmptyThinkOnNoThink {
@@ -190,5 +192,5 @@ func (r *Qwen35Renderer) Render(messages []api.Message, tools []api.Tool, think 
 		}
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String(), SnapshotOffset: snapshotOffset}, nil
 }

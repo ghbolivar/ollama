@@ -508,7 +508,7 @@ func TestFunctionGemmaRenderer(t *testing.T) {
 			renderer := &FunctionGemmaRenderer{}
 			result, err := renderer.Render(tt.messages, tt.tools, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expected, result.Prompt)
 		})
 	}
 }

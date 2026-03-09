@@ -483,7 +483,7 @@ First instruction<｜User｜>Hello<｜Assistant｜>`,
 			if err != nil {
 				t.Fatalf("Render() error = %v", err)
 			}
-			if diff := cmp.Diff(tt.expected, rendered); diff != "" {
+			if diff := cmp.Diff(tt.expected, rendered.Prompt); diff != "" {
 				t.Errorf("Render() mismatch (-want +got):\n%s", diff)
 			}
 		})

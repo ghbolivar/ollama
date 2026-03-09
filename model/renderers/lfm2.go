@@ -217,7 +217,7 @@ func (r *LFM2Renderer) renderMessageContent(message api.Message, imageOffset int
 	return sb.String()
 }
 
-func (r *LFM2Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (string, error) {
+func (r *LFM2Renderer) Render(messages []api.Message, tools []api.Tool, thinkValue *api.ThinkValue) (RenderResult, error) {
 	var sb strings.Builder
 
 	// Follow Liquid tool-use formatting for LFM2 tool wrappers.
@@ -316,5 +316,5 @@ func (r *LFM2Renderer) Render(messages []api.Message, tools []api.Tool, thinkVal
 		sb.WriteString("<|im_start|>assistant\n")
 	}
 
-	return sb.String(), nil
+	return RenderResult{Prompt: sb.String()}, nil
 }
