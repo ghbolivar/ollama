@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -349,8 +350,13 @@ func parseQwen3ToolCall(raw qwen3EventRawToolCall, tools []api.Tool) (api.ToolCa
 		},
 	}
 
-	for key, value := range parsed.Arguments {
-		toolCall.Function.Arguments.Set(key, value)
+	keys := make([]string, 0, len(parsed.Arguments))
+	for k := range parsed.Arguments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		toolCall.Function.Arguments.Set(key, parsed.Arguments[key])
 	}
 
 	return toolCall, nil

@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -989,11 +990,17 @@ func ptr(s string) *string {
 	return &s
 }
 
-// mapToArgs converts a map to ToolCallFunctionArguments
+// mapToArgs converts a map to ToolCallFunctionArguments with deterministic key order
+// to ensure consistent prompt rendering for KV cache reuse.
 func mapToArgs(m map[string]any) api.ToolCallFunctionArguments {
 	args := api.NewToolCallFunctionArguments()
-	for k, v := range m {
-		args.Set(k, v)
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		args.Set(k, m[k])
 	}
 	return args
 }
